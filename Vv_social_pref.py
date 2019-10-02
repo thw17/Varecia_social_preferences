@@ -301,13 +301,17 @@ def main():
 		combined_dict["Category"].append(categ1[k])
 
 	df = pd.DataFrame.from_dict(combined_dict)
-	df = df[["dyad", "ai", "relate", "Category", "udoi"]]
+	df = df[["dyad", "ai", "udoi", "relate", "Category"]]
+	df["Category2"] = np.where(df["relate"] > 0.25, "Kin", "Nonkin")
 
 	# plot
 	g = sns.scatterplot(
-		x="udoi", y="ai", hue="Category", palette=["black", "blue", "green"], data=df)
+		x="udoi", y="ai", hue="Category2", palette=["black", "blue"],
+		data=df, style="Category2", markers=["^", "o"])
+	handles, labels = g.get_legend_handles_labels()
+	g.legend(handles=handles[1:], labels=labels[1:])
 	g2 = g.get_figure()
-	g2.savefig("vv_scatter.png")
+	g2.savefig("vv_scatter.pdf", dpi=500, transparent=True)
 
 
 if __name__ == "__main__":
