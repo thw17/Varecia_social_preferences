@@ -310,6 +310,7 @@ def main():
 		data=df, style="Category2", markers=["^", "o"])
 	handles, labels = g.get_legend_handles_labels()
 	g.legend(handles=handles[1:], labels=labels[1:])
+	g.set(xlabel="Home Range Overlap (UDOI)", ylabel="Association Indices")
 	g2 = g.get_figure()
 	g2.savefig("vv_scatter.pdf", dpi=500, transparent=True)
 
