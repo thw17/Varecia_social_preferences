@@ -304,16 +304,67 @@ def main():
 	df = df[["dyad", "ai", "udoi", "relate", "Category"]]
 	df["Category2"] = np.where(df["relate"] > 0.25, "Kin", "Nonkin")
 
-	# plot
-	g = sns.scatterplot(
-		x="udoi", y="ai", hue="Category2", palette=["black", "blue"],
-		data=df, style="Category2", markers=["^", "o"])
-	handles, labels = g.get_legend_handles_labels()
-	g.legend(handles=handles[1:], labels=labels[1:])
-	g.set(xlabel="Home Range Overlap (UDOI)", ylabel="Association Indices")
-	g2 = g.get_figure()
-	g2.savefig("vv_scatter.pdf", dpi=500, transparent=True)
+	# # plot
+	# g = sns.scatterplot(
+	# 	x="udoi", y="ai", hue="Category2", palette=["black", "white"],
+	# 	data=df, style="Category2", markers=["^", "o"], edgecolor=["white", "black"])
+	# handles, labels = g.get_legend_handles_labels()
+	# g.legend(handles=handles[1:], labels=labels[1:])
+	# g.set(xlabel="Home Range Overlap (UDOI)", ylabel="Association Indices")
+	# g2 = g.get_figure()
+	# g2.savefig("vv_scatter.pdf", dpi=500, transparent=True)
 
+	# try subplots 9 x 6 inches
+	df_kin = df[df["Category2"] == "Kin"]
+	df_nonkin = df[df["Category2"] == "Nonkin"]
+	g = plt.figure(figsize=[9,6])
+	ax1 = g.add_subplot(111)
+	sns.scatterplot(
+		x="udoi", y="ai", hue="Category2", palette=["black"], data=df_nonkin,
+		style="Category2", markers=["^"], edgecolor=["white"], ax=ax1)
+
+	ax2 = g.add_subplot(111, frameon=False, sharex=ax1, sharey=ax1)
+	sns.scatterplot(
+		x="udoi", y="ai", hue="Category2", palette=["white"], data=df_kin,
+		style="Category2", markers=["o"], edgecolor=["black"], ax=ax2)
+
+	# handles, labels = ax1.get_legend_handles_labels()
+	# ax1.legend(handles=handles[1:], labels=labels[1:])
+	# handles, labels = ax2.get_legend_handles_labels()
+	# ax2.legend(handles=handles[1:], labels=labels[1:])
+	ax1.set(xlabel="Home Range Overlap (UDOI)", ylabel="Association Indices")
+	ax2.set_xlabel('')
+	ax2.set_ylabel('')
+	ax1.get_legend().remove()
+	ax2.get_legend().remove()
+	# g2 = g.get_figure()
+	g.savefig("vv_scatter_9x6.pdf", dpi=500, transparent=True)
+
+	# try subplots 6 x 4 inches
+	df_kin = df[df["Category2"] == "Kin"]
+	df_nonkin = df[df["Category2"] == "Nonkin"]
+	g = plt.figure(figsize=[6,4])
+	ax1 = g.add_subplot(111)
+	sns.scatterplot(
+		x="udoi", y="ai", hue="Category2", palette=["black"], data=df_nonkin,
+		style="Category2", markers=["^"], edgecolor=["white"], ax=ax1)
+
+	ax2 = g.add_subplot(111, frameon=False, sharex=ax1, sharey=ax1)
+	sns.scatterplot(
+		x="udoi", y="ai", hue="Category2", palette=["white"], data=df_kin,
+		style="Category2", markers=["o"], edgecolor=["black"], ax=ax2)
+
+	# handles, labels = ax1.get_legend_handles_labels()
+	# ax1.legend(handles=handles[1:], labels=labels[1:])
+	# handles, labels = ax2.get_legend_handles_labels()
+	# ax2.legend(handles=handles[1:], labels=labels[1:])
+	ax1.set(xlabel="Home Range Overlap (UDOI)", ylabel="Association Indices")
+	ax2.set_xlabel('')
+	ax2.set_ylabel('')
+	ax1.get_legend().remove()
+	ax2.get_legend().remove()
+	# g2 = g.get_figure()
+	g.savefig("vv_scatter_6x4.pdf", dpi=500, transparent=True)
 
 if __name__ == "__main__":
 	main()
