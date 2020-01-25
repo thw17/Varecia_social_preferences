@@ -6,6 +6,8 @@
 # for UDOI and relatedness (are dyads with highest UDOI values more related than expected?).
 # In addition, it creates one of the plots in the paper.
 
+## Final command line used: python ~/Projects/Github_repos/Varecia_social_preferences/Vv_social_pref.py --association vv_association_matrix.xlsx --pref_matrix vv_sig_pref_assoc_matrix.xlsx --categories vv_category_matrix.xlsx --udoi vv_rangeoverlap_matrix.xlsx --permutations 10000 --relatedness vv_relatedness_matrix_no_missing_data.xlsx
+
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
