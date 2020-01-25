@@ -1,5 +1,5 @@
 # Tim Webster, University of Utah, 2019
-# This script runs a handful of analyses for our paper, Baden et al. (2019)
+# This script runs a handful of analyses for our paper, Baden et al. (2019 and revision in 2020)
 # It is meant to be a one-time script and thus, the code is functional but isn't
 # very clean or concise. It aims to run randomizations analyses for
 # association and relatedness (are top associates more related than expected?) and
@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
 from scipy import stats
 from openpyxl import load_workbook
 
@@ -25,8 +26,12 @@ def parse_args():
 		help="Input association matrix Excel file")
 
 	parser.add_argument(
+		"--pref_matrix", required=True,
+		help="Input preferred associate matrix Excel file (where preferences were determined using another program)")
+
+	parser.add_argument(
 		"--categories", required=True,
-		help="Input association matrix Excel file")
+		help="Input category matrix Excel file")
 
 	parser.add_argument(
 		"--relatedness", required=True,
@@ -77,6 +82,7 @@ def main():
 	args = parse_args()
 
 	assoc = read_excel_matrix_as_edgelist(args.association)
+	pref_assoc = read_excel_matrix_as_edgelist(args.pref_matrix)
 	relate = read_excel_matrix_as_edgelist(args.relatedness)
 	udoi = read_excel_matrix_as_edgelist(args.udoi)
 
@@ -99,10 +105,33 @@ def main():
 		if (k[1], k[0]) in master_keys_unique:
 			assoc_temp[k] = assoc[k]
 
+	pref_assoc_temp = {}
+	for k in pref_assoc:
+		if (k[1], k[0]) in master_keys_unique:
+			pref_assoc_temp[k] = pref_assoc[k]
+
 	udoi_temp = {}
 	for k in udoi:
 		if (k[1], k[0]) in master_keys_unique:
 			udoi_temp[k] = udoi[k]
+
+	relate_temp = {}
+	for k in relate:
+		if (k[1], k[0]) in master_keys_unique:
+			relate_temp[k] = relate[k]
+
+	print("Association dyads: {}".format(len(assoc_temp)))
+	print("Preference dyads: {}".format(len(pref_assoc_temp)))
+	print("UDOI dyads: {}".format(len(udoi_temp)))
+	print("Relatedness dyads: {}".format(len(relate_temp)))
+	print("")
+
+	print("######################################################################")
+	print("Running analyses for original paper submission, with preference based on percentile")
+	print("--these analyses were based on Carter et al. 2013 and Best et al. 2014")
+	print("--they involved assessing preferences based on percentile of indices")
+	print("--during paper revisions, at the suggest on of a reviewer, we abandoned this approach for linear models (see below)")
+	print("")
 
 	# Set up dictionaries for dyads in both association and relatedness matrices
 	assoc_ak = {k: assoc_temp[k] for k in relate if k in assoc_temp}
@@ -277,6 +306,103 @@ def main():
 			empirical_not_u, args.permutations, stats.percentileofscore(
 				not_with_repl, empirical_not_u, kind="strict")))
 	print("")
+
+
+	## Rerun analyses for preferred associates where preferences where determined
+	## Using an external program (SOCPROG)
+	## This code uses routines run above and thus, the following code cannot be
+	## extracted and run on its own
+
+	print("######################################################################")
+	print("Now conducting analyses using preferred associates defined externally")
+	print("--these are the updated analyses used instead of the percentile method described above")
+	print("--we first repeat the permutation test with the new preferences")
+	print("--we next use logistic regression with randomizations, which is what we ended up using in the paper")
+	print("")
+
+	pref_assoc_ak = {k: pref_assoc_temp[k] for k in assoc_ak if k in pref_assoc_temp}
+
+	# Ensure values for association and relatedness are in same order
+	pref_assoc_ak_values = []
+	relate_ak_values = []
+	for k in pref_assoc_ak:
+		pref_assoc_ak_values.append(pref_assoc_ak[k])
+		relate_ak_values.append(relate_ak[k])
+
+	# pref_assoc_ak_values = list(pref_assoc_ak.values())
+	# relate_ak_values = list(relate_ak.values())
+
+	a_pref_count = 0
+	a_other_count = 0
+	for x in pref_assoc_ak_values:
+		if x > a95:
+			a_pref_count += 1
+		else:
+			a_other_count += 1
+
+	temp_pref = []
+	temp_not = []
+
+	print("Preferred associates (no particular order):")
+	for pair in pref_assoc_ak:
+		if pref_assoc_ak[pair] == 1:
+			temp_pref.append(relate_ak[pair])
+			print("{}: {}".format(pair, pref_assoc_ak[pair]))
+		else:
+			temp_not.append(relate_ak[pair])
+
+	empirical_pref_a = np.mean(temp_pref)
+	empirical_not_a = np.mean(temp_not)
+
+	print("Preferred mean: {}".format(empirical_pref_a))
+	print("Not preferred mean: {}".format(empirical_not_a))
+	print("")
+
+	pref_dist = []
+	not_dist = []
+	for i in range(0, args.permutations):
+		k = np.random.permutation(relate_ak_values)
+		pref1 = k[:a_pref_count]
+		not1 = k[a_pref_count:]
+		pref_dist.append(np.mean(pref1))
+		not_dist.append(np.mean(not1))
+
+	pref_with_repl = []
+	not_with_repl = []
+	for i in range(0, args.permutations):
+		pref_with_repl.append(np.mean(np.random.choice(relate_ak_values, a_pref_count)))
+		not_with_repl.append(np.mean(np.random.choice(relate_ak_values, a_other_count)))
+
+	print(
+		"Association--Emprical preferred mean: {}. Percentile of {} permutations with replacement: {}".format(
+			empirical_pref_a, args.permutations, stats.percentileofscore(
+				pref_with_repl, empirical_pref_a, kind="strict")))
+	print(
+		"Association--Emprical not preferred mean: {}. Percentile of {} permutations with replacement: {}".format(
+			empirical_not_a, args.permutations, stats.percentileofscore(
+				not_with_repl, empirical_not_a, kind="strict")))
+	print("")
+
+
+	print("")
+	print("Logistic regression")
+	model = LogisticRegression().fit(np.array(relate_ak_values).reshape(-1,1), pref_assoc_ak_values)
+	c1 = model.coef_
+	i1 = model.intercept_
+	print("Model coef: {}".format(c1))
+	print("Model intercept: {}".format(i1))
+
+	coef_dist = []
+	for i in range(0, args.permutations):
+		k = np.random.permutation(relate_ak_values)
+		temp_model = LogisticRegression().fit(np.array(k).reshape(-1,1), pref_assoc_ak_values)
+		coef_dist.append(temp_model.coef_)
+
+	print(
+		"Logistic regression permutation analysis p-value: {}".format(
+			1.0 - stats.percentileofscore(
+				coef_dist, c1, kind="strict")/100))
+
 
 
 	#########################################################################
